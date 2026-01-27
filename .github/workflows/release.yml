@@ -1,0 +1,39 @@
+name: Create Release Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create mod package structure
+        run: |
+          mkdir -p package/mods-unpacked/cogo-Bottlenecks
+          cp *.gd package/mods-unpacked/cogo-Bottlenecks/
+          cp *.json package/mods-unpacked/cogo-Bottlenecks/
+
+      - name: Create zip archive
+        run: |
+          cd package
+          zip -r ../cogo-Bottlenecks.zip mods-unpacked/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cogo-Bottlenecks
+          path: cogo-Bottlenecks.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: cogo-Bottlenecks.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

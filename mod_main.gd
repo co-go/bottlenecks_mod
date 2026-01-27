@@ -95,6 +95,9 @@ func _is_valid_window(node: Node) -> bool:
     # requirements container + code (code_file)
     if _has_container(node, "requirements") and _has_property(node, "code"):
         return true
+    # oil + refined_oil (oil_refiner)
+    if _has_property(node, "oil") and _has_property(node, "refined_oil"):
+        return true
     return false
 
 
@@ -132,7 +135,6 @@ func _add_indicator_to_window(window: Node) -> void:
 
     var indicator := BottleneckIndicator.new()
     indicator.name = "BottleneckIndicator"
-    indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
     indicator.size_flags_horizontal = Control.SIZE_SHRINK_END
     indicator.size_flags_vertical = Control.SIZE_SHRINK_CENTER
     indicator.custom_minimum_size = INDICATOR_SIZE
@@ -320,6 +322,14 @@ func _calculate_bottleneck_state(window: Node) -> int:
                 min_prod = prod
         input_rate = min_prod if min_prod != INF else 0.0
         processing_capacity = _get_production(code_node) if _get_production(code_node) > 0 else input_rate
+
+    # oil + refined_oil (oil_refiner)
+    elif _has_property(window, "oil") and _has_property(window, "refined_oil"):
+        var oil_node = window.get("oil")
+        var speed: float = window.get("speed") if "speed" in window else 0.0
+        var required: float = _get_required(oil_node)
+        input_rate = _get_production(oil_node) / required if required > 0 else 0.0
+        processing_capacity = speed
 
     else:
         return 0
