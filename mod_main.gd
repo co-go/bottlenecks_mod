@@ -98,6 +98,12 @@ func _is_valid_window(node: Node) -> bool:
     # oil + refined_oil (oil_refiner)
     if _has_property(node, "oil") and _has_property(node, "refined_oil"):
         return true
+    # torrent_downloader (torrent + download)
+    if _has_property(node, "torrent") and _has_property(node, "download"):
+        return true
+    # redownloader (file + download + output)
+    if _has_property(node, "file") and _has_property(node, "download") and _has_property(node, "output"):
+        return true
     return false
 
 
@@ -330,6 +336,18 @@ func _calculate_bottleneck_state(window: Node) -> int:
         var required: float = _get_required(oil_node)
         input_rate = _get_production(oil_node) / required if required > 0 else 0.0
         processing_capacity = speed
+
+    # download windows (torrent_downloader, redownloader)
+    elif (_has_property(window, "torrent") and _has_property(window, "download")) or \
+         (_has_property(window, "file") and _has_property(window, "download") and _has_property(window, "output")):
+        var download_node = window.get("download")
+        var goal: float = window.get("goal") if "goal" in window else 1.0
+
+        # use torrent input if available, otherwise file (redownloader)
+        var input_node = window.get("torrent") if _has_property(window, "torrent") else window.get("file")
+        input_rate = _get_production(input_node)
+        if goal > 0:
+            processing_capacity = _get_count(download_node) / goal
 
     else:
         return 0

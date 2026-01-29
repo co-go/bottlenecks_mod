@@ -11,7 +11,7 @@ var custom_tooltip: PanelContainer = null
 var state: int = 0
 
 const COLOR_GOOD := Color(0, 1, 0)
-const COLOR_STARVED := Color(1, 1, 0)
+const COLOR_BOTTLENECK := Color(1, 1, 0)
 const COLOR_INACTIVE := Color(1, 0, 0)
 const COLOR_PAUSED := Color(0.5, 0.5, 0.5)
 
@@ -114,9 +114,9 @@ func _get_color_for_state(s: int) -> Color:
     match s:
         -1: return COLOR_PAUSED
         0: return COLOR_INACTIVE
-        1: return COLOR_STARVED
+        1: return COLOR_GOOD
         2: return COLOR_GOOD
-        3: return COLOR_GOOD
+        3: return COLOR_BOTTLENECK
         _: return COLOR_INACTIVE
 
 
@@ -124,7 +124,7 @@ func _get_tooltip_for_state(s: int) -> String:
     match s:
         -1: return "paused"
         0: return "inactive - no input"
-        1: return "starved - input less than processing speed"
+        1: return "keeping up - processing faster than input"
         2: return "optimal - input equivalent to processing speed"
-        3: return "bottleneck - input exceeds processing speed"
+        3: return "bottleneck - can't keep up with input"
         _: return "unknown"
