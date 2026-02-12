@@ -104,6 +104,21 @@ func _is_valid_window(node: Node) -> bool:
     # redownloader (file + download + output)
     if _has_property(node, "file") and _has_property(node, "download") and _has_property(node, "output"):
         return true
+    # torrent_filter (input + input2 + download)
+    if _has_property(node, "input") and _has_property(node, "input2") and _has_property(node, "download"):
+        return true
+    # code_hashmap (string + input, dual input instant processor)
+    if _has_property(node, "string") and _has_property(node, "input") and _has_property(node, "output"):
+        return true
+    # remasterer (game + program + video + clock)
+    if _has_property(node, "game") and _has_property(node, "program") and _has_property(node, "video") and _has_property(node, "clock"):
+        return true
+    # splicer (video + clock with dual outputs: image + sound)
+    if _has_property(node, "video") and _has_property(node, "clock") and _has_property(node, "image") and _has_property(node, "sound"):
+        return true
+    # frame_generator (video + image + clock)
+    if _has_property(node, "video") and _has_property(node, "image") and _has_property(node, "clock"):
+        return true
     return false
 
 
@@ -348,6 +363,89 @@ func _calculate_bottleneck_state(window: Node) -> int:
         input_rate = _get_production(input_node)
         if goal > 0:
             processing_capacity = _get_count(download_node) / goal
+
+    # torrent_filter (input + input2 + download)
+    elif _has_property(window, "input") and _has_property(window, "input2") and _has_property(window, "download"):
+        var input1_node = window.get("input")
+        var input2_node = window.get("input2")
+        var download_node = window.get("download")
+        var goal: float = window.get("goal") if "goal" in window else 1.0
+
+        # input rate is limited by the slower of the two inputs
+        var input1_prod := _get_production(input1_node)
+        var input2_prod := _get_production(input2_node)
+        input_rate = minf(input1_prod, input2_prod)
+
+        # processing capacity is download speed / goal
+        if goal > 0:
+            processing_capacity = _get_count(download_node) / goal
+
+    # code_hashmap (string + input, instant dual input processor)
+    elif _has_property(window, "string") and _has_property(window, "input") and _has_property(window, "output"):
+        var string_node = window.get("string")
+        var input_node = window.get("input")
+
+        # normalize by required amounts
+        var string_required := _get_required(string_node)
+        var input_required := _get_required(input_node)
+        var string_prod := _get_production(string_node) / string_required if string_required > 0 else 0.0
+        var input_prod := _get_production(input_node) / input_required if input_required > 0 else 0.0
+
+        # for dual-input processors: slower input is bottleneck, faster is capacity
+        input_rate = minf(string_prod, input_prod)
+        processing_capacity = maxf(string_prod, input_prod)
+
+    # remasterer (game + program + video + clock)
+    elif _has_property(window, "game") and _has_property(window, "program") and _has_property(window, "video") and _has_property(window, "clock"):
+        var game_node = window.get("game")
+        var program_node = window.get("program")
+        var video_node = window.get("video")
+        var clock_node = window.get("clock")
+        var goal: float = window.get("goal") if "goal" in window else 1.0
+
+        # input rate is the minimum of all 3 inputs (normalized by required)
+        var game_prod := _get_production(game_node)
+        var program_required := _get_required(program_node)
+        var video_required := _get_required(video_node)
+        var program_prod := _get_production(program_node) / program_required if program_required > 0 else 0.0
+        var video_prod := _get_production(video_node) / video_required if video_required > 0 else 0.0
+
+        input_rate = minf(game_prod, minf(program_prod, video_prod))
+
+        # processing capacity is clock speed / goal
+        if goal > 0:
+            processing_capacity = _get_count(clock_node) / goal
+
+    # splicer (video + clock, dual output: image + sound)
+    elif _has_property(window, "video") and _has_property(window, "clock") and _has_property(window, "image") and _has_property(window, "sound"):
+        var video_node = window.get("video")
+        var clock_node = window.get("clock")
+        var goal: float = window.get("goal") if "goal" in window else 1.0
+
+        # input is just video production
+        input_rate = _get_production(video_node)
+
+        # processing capacity is clock speed / goal
+        if goal > 0:
+            processing_capacity = _get_count(clock_node) / goal
+
+    # frame_generator (video + image + clock)
+    elif _has_property(window, "video") and _has_property(window, "image") and _has_property(window, "clock"):
+        var video_node = window.get("video")
+        var image_node = window.get("image")
+        var clock_node = window.get("clock")
+        var goal: float = window.get("goal") if "goal" in window else 1.0
+
+        # input rate is minimum of video and image (normalized by required)
+        var video_prod := _get_production(video_node)
+        var image_required := _get_required(image_node)
+        var image_prod := _get_production(image_node) / image_required if image_required > 0 else 0.0
+
+        input_rate = minf(video_prod, image_prod)
+
+        # processing capacity is clock speed / goal
+        if goal > 0:
+            processing_capacity = _get_count(clock_node) / goal
 
     else:
         return 0
