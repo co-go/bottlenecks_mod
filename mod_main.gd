@@ -119,7 +119,21 @@ func _is_valid_window(node: Node) -> bool:
     # frame_generator (video + image + clock)
     if _has_property(node, "video") and _has_property(node, "image") and _has_property(node, "clock"):
         return true
-    return false
+    # 3.x processing windows expose their inputs and capacity through Process.
+    return _get_single_process(node) != null
+
+
+func _get_single_process(window: Node) -> Process:
+    var process_node = window.get_node_or_null("Process")
+    if not process_node is Process:
+        return null
+
+    var process: Process = process_node
+    if not process.should_consume or process.resources.is_empty():
+        return null
+    if process.goal_obj == null or process.speed_obj == null:
+        return null
+    return process
 
 
 func _has_property(node: Node, prop_name: String) -> bool:
@@ -453,7 +467,16 @@ func _calculate_bottleneck_state(window: Node) -> int:
             processing_capacity = _get_count(clock_node) / goal
 
     else:
-        return 0
+        var process := _get_single_process(window)
+        if process == null:
+            return 0
+
+        input_rate = process.get_input_rate()
+        var goal: float = process.goal_obj.value
+        if goal > 0:
+            processing_capacity = process.speed_obj.get_speed() / goal
+        if input_rate < 0:
+            input_rate = 0.0
 
     if input_rate <= 0.0:
         return 0

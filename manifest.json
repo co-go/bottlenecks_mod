@@ -1,15 +1,15 @@
 {
   "name": "Bottlenecks",
   "namespace": "cogo",
-  "version_number": "2.1.0",
+  "version_number": "2.2.0",
   "description": "Adds colored visual indicators to processing windows showing their bottleneck status.",
-  "website_url": "https://github.com/co-go/bottlenecks_mod",
+  "website_url": "https://github.com/KillzTheSpy2/bottlenecks_mod",
   "dependencies": [],
   "extra": {
     "godot": {
       "incompatibilities": [],
-      "authors": ["cogo"],
-      "compatible_game_version": ["2.1.10"],
+      "authors": ["cogo", "Styxin"],
+      "compatible_game_version": ["3.0.12"],
       "compatible_mod_loader_version": ["7.0.0"]
     }
   }
